@@ -5,6 +5,11 @@ resource "google_compute_network" "project-network" {
   # Terraform will look up the type in terraform module
   name = "${var.project.name}-network"
 }
+# Reverse a static IP address
+# NAT it to google compute instance in block network_interface > access_config > nat_ip
+resource "google_compute_address" "myserver_ip" {
+  name = "${var.project.name}-ipv4-address"
+}
 resource "google_compute_instance" "myserver" {
   name         = "${var.project.name}-server"
   machine_type = "e2-micro"
@@ -20,5 +25,8 @@ resource "google_compute_instance" "myserver" {
 
   network_interface {
     network = google_compute_network.project-network.id
+    access_config {
+      nat_ip = google_compute_address.myserver_ip.address
+    }
   }
 }
