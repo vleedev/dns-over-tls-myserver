@@ -5,3 +5,20 @@ resource "google_compute_network" "project-network" {
   # Terraform will look up the type in terraform module
   name = "${var.project.name}-network"
 }
+resource "google_compute_instance" "myserver" {
+  name         = "${var.project.name}-server"
+  machine_type = "e2-micro"
+
+  boot_disk {
+    auto_delete = true
+    initialize_params {
+      image = "centos-stream-8-v20230306"
+      size  = "20" # The minimum is 20GB
+      type  = "pd-standard"
+    }
+  }
+
+  network_interface {
+    network = google_compute_network.project-network.id
+  }
+}
