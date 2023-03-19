@@ -35,7 +35,10 @@ resource "google_compute_firewall" "icmp" {
   name          = "${var.project.name}-allow-icmp"
   network       = google_compute_network.project-network.name
   source_ranges = ["0.0.0.0/0"]
-  priority      = 65535
+  # Priority can be 0 - 65535
+  # Default is 1000
+  # Set to 65535, this rule will be disable
+  priority = 65534
 
   allow {
     protocol = "icmp"
