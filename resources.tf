@@ -24,7 +24,7 @@ resource "google_compute_instance" "myserver" {
   }
 
   network_interface {
-    network = google_compute_network.project-network.id
+    network = google_compute_network.project-network.name
     access_config {
       nat_ip = google_compute_address.myserver_ip.address
     }
