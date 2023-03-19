@@ -30,3 +30,13 @@ resource "google_compute_instance" "myserver" {
     }
   }
 }
+# Create firewall rules
+resource "google_compute_firewall" "icmp" {
+  name    = "${var.project.name}-allow-icmp"
+  network = google_compute_network.project-network.name
+  source_ranges = [ "0.0.0.0/0" ]
+
+  allow {
+    protocol = "icmp"
+  }
+}
