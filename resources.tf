@@ -5,6 +5,24 @@ resource "google_compute_network" "project-network" {
   # Terraform will look up the type in terraform module
   name = "${var.project.name}-network"
 }
+# Create router table for us-west1-c sub
+module "cloud_router" {
+  source  = "terraform-google-modules/cloud-router/google"
+  version = "~> 4.0"
+  project = var.google_project
+  region  = "us-west1"
+  name    = "router-us-west1-c"
+  network = google_compute_network.project-network.id
+}
+# Allow us-west1 to connect to internet
+module "cloud-nat" {
+  source     = "terraform-google-modules/cloud-nat/google"
+  version    = "~> 2.2"
+  router     = module.cloud_router.router.id
+  project_id = var.google_project
+  region     = "us-west1"
+}
+
 # Reverse a static IP address
 # NAT it to google compute instance in block network_interface > access_config > nat_ip
 resource "google_compute_address" "myserver_ip" {
