@@ -44,3 +44,20 @@ resource "google_compute_firewall" "icmp" {
     protocol = "icmp"
   }
 }
+# Allow SSH connection from all
+resource "google_compute_firewall" "ssh" {
+  name = "${var.project.name}-allow-ssh"
+  allow {
+    ports    = ["22"]
+    protocol = "tcp"
+  }
+  direction = "INGRESS"
+  network   = google_compute_network.project-network.id
+  # Priority can be 0 - 65535
+  # Default is 1000
+  # Set to 65535, this rule will be disable
+  priority      = 65534
+  source_ranges = ["0.0.0.0/0"]
+  # If you want to apply to a specific instance
+  # target_tags   = ["ssh"]
+}
