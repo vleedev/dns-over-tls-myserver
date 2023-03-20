@@ -24,7 +24,7 @@ resource "google_compute_instance" "myserver" {
   }
 
   network_interface {
-    network = google_compute_network.project-network.name
+    network = google_compute_network.project-network.id
     access_config {
       nat_ip = google_compute_address.myserver_ip.address
     }
@@ -33,7 +33,7 @@ resource "google_compute_instance" "myserver" {
 # Create firewall rules
 resource "google_compute_firewall" "icmp" {
   name          = "${var.project.name}-allow-icmp"
-  network       = google_compute_network.project-network.name
+  network       = google_compute_network.project-network.id
   source_ranges = ["0.0.0.0/0"]
   # Priority can be 0 - 65535
   # Default is 1000
