@@ -8,7 +8,8 @@ resource "google_compute_network" "project-network" {
 # Reverse a static IP address
 # NAT it to google compute instance in block network_interface > access_config > nat_ip
 resource "google_compute_address" "myserver_ip" {
-  name = "${var.project.name}-ipv4-address"
+  name   = "${var.project.name}-ipv4-address"
+  region = "us-west1"
 }
 # Declare DNS container
 module "dns-container" {
@@ -25,7 +26,7 @@ module "dns-container" {
 resource "google_compute_instance" "myserver" {
   name         = "${var.project.name}-server"
   machine_type = "e2-micro"
-
+  zone         = "us-west1-c"
   boot_disk {
     auto_delete = true
     initialize_params {
