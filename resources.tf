@@ -12,8 +12,8 @@ resource "google_compute_address" "myserver_ip" {
 }
 # Declare DNS container
 module "dns-container" {
-  source  = "terraform-google-modules/container-vm/google"
-  version = "3.1.0"
+  source           = "terraform-google-modules/container-vm/google"
+  version          = "3.1.0"
   cos_image_family = "101-lts"
   # Run DNS container https://github.com/qdm12/dns
   container = {
