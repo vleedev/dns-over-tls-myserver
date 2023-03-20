@@ -10,6 +10,18 @@ resource "google_compute_network" "project-network" {
 resource "google_compute_address" "myserver_ip" {
   name = "${var.project.name}-ipv4-address"
 }
+# Declare DNS container
+module "dns-container" {
+  source  = "terraform-google-modules/container-vm/google"
+  version = "3.1.0"
+  cos_image_family = "101-lts"
+  # Run DNS container https://github.com/qdm12/dns
+  container = {
+    image = "qmcgaw/dns"
+  }
+  restart_policy = "Always"
+}
+
 resource "google_compute_instance" "myserver" {
   name         = "${var.project.name}-server"
   machine_type = "e2-micro"
@@ -17,8 +29,9 @@ resource "google_compute_instance" "myserver" {
   boot_disk {
     auto_delete = true
     initialize_params {
-      image = "centos-stream-8-v20230306"
-      size  = "20" # The minimum is 20GB
+      # Use DNS container in google compute instance
+      image = module.dns-container.source_image
+      size  = "10" # The minimum is 10GB
       type  = "pd-standard"
     }
   }
@@ -29,6 +42,10 @@ resource "google_compute_instance" "myserver" {
       nat_ip = google_compute_address.myserver_ip.address
     }
   }
+  # metadata = {
+  #   "ssh-keys" = <<EOT
+  #   EOT
+  # }
 }
 # Create firewall rules
 resource "google_compute_firewall" "icmp" {
