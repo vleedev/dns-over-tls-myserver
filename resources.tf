@@ -5,22 +5,83 @@ resource "google_compute_network" "project-network" {
   # Terraform will look up the type in terraform module
   name = "${var.project.name}-network"
 }
-# Create router table for us-west1-c sub
-module "cloud_router" {
-  source  = "terraform-google-modules/cloud-router/google"
-  version = "~> 4.0"
-  project = var.google_project
-  region  = "us-west1"
-  name    = "router-us-west1-c"
-  network = google_compute_network.project-network.id
-}
-# Allow us-west1 to connect to internet
-module "cloud-nat" {
-  source     = "terraform-google-modules/cloud-nat/google"
-  version    = "~> 2.2"
-  router     = module.cloud_router.router.id
-  project_id = var.google_project
-  region     = "us-west1"
+module "vpc_firewall_rules" {
+  source       = "terraform-google-modules/network/google//modules/firewall-rules"
+  project_id   = var.google_project
+  network_name = google_compute_network.project-network.name
+
+  rules = [
+    # Allow SSH connection from everywhere
+    {
+      name        = "vpc-allow-ssh-ingress"
+      description = null
+      direction   = "INGRESS"
+      # Priority can be 0 - 65535
+      # Default is 1000
+      # Set to 65535, this rule will be disable
+      priority                = 65534
+      ranges                  = ["0.0.0.0/0"]
+      source_tags             = null
+      source_service_accounts = null
+      target_tags             = null
+      target_service_accounts = null
+      allow = [{
+        protocol = "tcp"
+        ports    = ["22"]
+      }]
+      deny       = []
+      log_config = null
+      # log_config = {
+      # metadata = "INCLUDE_ALL_METADATA"
+      # }
+    },
+    {
+      name        = "vpc-allow-icmp"
+      description = null
+      direction   = "INGRESS"
+      # Priority can be 0 - 65535
+      # Default is 1000
+      # Set to 65535, this rule will be disable
+      priority                = 65534
+      ranges                  = ["0.0.0.0/0"]
+      source_tags             = null
+      source_service_accounts = null
+      target_tags             = null
+      target_service_accounts = null
+      allow = [{
+        protocol = "icmp"
+        ports    = null
+      }]
+      deny       = []
+      log_config = null
+      # log_config = {
+      # metadata = "INCLUDE_ALL_METADATA"
+      # }
+    },
+    {
+      name        = "vpc-allow-dns53"
+      description = null
+      direction   = "INGRESS"
+      # Priority can be 0 - 65535
+      # Default is 1000
+      # Set to 65535, this rule will be disable
+      priority                = 65534
+      ranges                  = ["0.0.0.0/0"]
+      source_tags             = null
+      source_service_accounts = null
+      target_tags             = null
+      target_service_accounts = null
+      allow = [{
+        protocol = "udp"
+        ports    = ["53"]
+      }]
+      deny       = []
+      log_config = null
+      # log_config = {
+      # metadata = "INCLUDE_ALL_METADATA"
+      # }
+    }
+  ]
 }
 
 # Reverse a static IP address
@@ -30,13 +91,14 @@ resource "google_compute_address" "myserver_ip" {
   region = "us-west1"
 }
 # Declare DNS container
-module "dns-container" {
+module "gce-container" {
   source           = "terraform-google-modules/container-vm/google"
   version          = "3.1.0"
   cos_image_family = "101-lts"
   # Run DNS container https://github.com/qdm12/dns
   container = {
     image = "qmcgaw/dns"
+    # image = "ghcr.io/vleedev/debug-tools:main"
   }
   restart_policy = "Always"
 }
@@ -45,11 +107,13 @@ resource "google_compute_instance" "myserver" {
   name         = "${var.project.name}-server"
   machine_type = "e2-micro"
   zone         = "us-west1-c"
+  # If true, allows Terraform to stop the instance to update its properties.
+  allow_stopping_for_update = true
   boot_disk {
     auto_delete = true
     initialize_params {
       # Use DNS container in google compute instance
-      image = module.dns-container.source_image
+      image = module.gce-container.source_image
       size  = "10" # The minimum is 10GB
       type  = "pd-standard"
     }
@@ -61,39 +125,22 @@ resource "google_compute_instance" "myserver" {
       nat_ip = google_compute_address.myserver_ip.address
     }
   }
-  # metadata = {
-  #   "ssh-keys" = <<EOT
-  #   EOT
-  # }
-}
-# Create firewall rules
-resource "google_compute_firewall" "icmp" {
-  name          = "${var.project.name}-allow-icmp"
-  network       = google_compute_network.project-network.id
-  source_ranges = ["0.0.0.0/0"]
-  # Priority can be 0 - 65535
-  # Default is 1000
-  # Set to 65535, this rule will be disable
-  priority = 65534
+  metadata = {
+    gce-container-declaration = module.gce-container.metadata_value
+    # "ssh-keys" = <<EOT
+    # EOT
 
-  allow {
-    protocol = "icmp"
+    startup-script = <<-EOF1
+      #! /bin/bash
+      set -euo pipefail
+
+      export DEBIAN_FRONTEND=noninteractive
+      systemctl stop systemd-resolved
+      systemctl disable systemd-resolved
+    EOF1
   }
-}
-# Allow SSH connection from all
-resource "google_compute_firewall" "ssh" {
-  name = "${var.project.name}-allow-ssh"
-  allow {
-    ports    = ["22"]
-    protocol = "tcp"
+
+  lifecycle {
+    create_before_destroy = true
   }
-  direction = "INGRESS"
-  network   = google_compute_network.project-network.id
-  # Priority can be 0 - 65535
-  # Default is 1000
-  # Set to 65535, this rule will be disable
-  priority      = 65534
-  source_ranges = ["0.0.0.0/0"]
-  # If you want to apply to a specific instance
-  # target_tags   = ["ssh"]
 }
