@@ -80,6 +80,29 @@ module "vpc_firewall_rules" {
       # log_config = {
       # metadata = "INCLUDE_ALL_METADATA"
       # }
+    },
+    {
+      name        = "vpc-allow-dns853-tcp"
+      description = null
+      direction   = "INGRESS"
+      # Priority can be 0 - 65535
+      # Default is 1000
+      # Set to 65535, this rule will be disable
+      priority                = 65534
+      ranges                  = ["0.0.0.0/0"]
+      source_tags             = null
+      source_service_accounts = null
+      target_tags             = null
+      target_service_accounts = null
+      allow = [{
+        protocol = "tcp"
+        ports    = ["853"]
+      }]
+      deny       = []
+      log_config = null
+      # log_config = {
+      # metadata = "INCLUDE_ALL_METADATA"
+      # }
     }
   ]
 }
