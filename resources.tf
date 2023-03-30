@@ -130,7 +130,11 @@ module "gce-container" {
       },
       {
         name  = "PROVIDERS"
-        value = "cloudflare,google,libredns,quad9,quadrant"
+        value = "cloudflare,google"
+      },
+      {
+        name  = "CHECK_DNS"
+        value = "on"
       }
     ],
   }
