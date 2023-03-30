@@ -122,6 +122,17 @@ module "gce-container" {
   container = {
     image = "qmcgaw/dns"
     # image = "ghcr.io/vleedev/debug-tools:main"
+    # https://github.com/qdm12/dns#environment-variables
+    env = [
+      {
+        name  = "BLOCK_ADS"
+        value = "on"
+      },
+      {
+        name  = "PROVIDERS"
+        value = "cloudflare,google,libredns,quad9,quadrant"
+      }
+    ],
   }
   restart_policy = "Always"
 }
